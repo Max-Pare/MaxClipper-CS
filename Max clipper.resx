@@ -120,15 +120,6 @@
   <metadata name="openFileDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="button2.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-    <value>
-        iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
-        vAAADrwBlbxySQAAAI1JREFUSEtjGAWDChgA8Xkg/o8DFwAxRWC/lKTA/7Bgc6wYJAdUQ5ElYIP+f1+K
-        FedkuMIsIYT3A7EDEGMAvBaAMMgSZF9hw1BH3IcYiQrACtANJRWDzACZBTESFYxaAMajFhDEoxYQxPgs
-        uI+vsCMWQ4sKUKmMAUAFFKgMgbmAXAwq7BKAeBQMCsDAAABszBh8jm0saAAAAABJRU5ErkJggg==
-</value>
-  </data>
   <metadata name="folderBrowserDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>295, 17</value>
   </metadata>

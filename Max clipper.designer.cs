@@ -28,13 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             this.filePath = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.openFile = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            this.button2 = new System.Windows.Forms.Button();
             this.hScrollBar1 = new System.Windows.Forms.HScrollBar();
             this.hScrollBar2 = new System.Windows.Forms.HScrollBar();
             this.label2 = new System.Windows.Forms.Label();
@@ -42,6 +40,7 @@
             this.button1 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.encoderPresetsBox = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -49,7 +48,7 @@
             // 
             this.filePath.Location = new System.Drawing.Point(109, 28);
             this.filePath.Name = "filePath";
-            this.filePath.Size = new System.Drawing.Size(620, 20);
+            this.filePath.Size = new System.Drawing.Size(656, 20);
             this.filePath.TabIndex = 1;
             this.filePath.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
@@ -73,7 +72,7 @@
             // 
             // openFile
             // 
-            this.openFile.Location = new System.Drawing.Point(771, 25);
+            this.openFile.Location = new System.Drawing.Point(771, 26);
             this.openFile.Name = "openFile";
             this.openFile.Size = new System.Drawing.Size(75, 23);
             this.openFile.TabIndex = 4;
@@ -86,25 +85,15 @@
             this.openFileDialog1.FileName = "openFileDialog1";
             this.openFileDialog1.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog1_FileOk);
             // 
-            // button2
-            // 
-            this.button2.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("button2.BackgroundImage")));
-            this.button2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.button2.Location = new System.Drawing.Point(735, 25);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(30, 24);
-            this.button2.TabIndex = 5;
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.explorerButton);
-            // 
             // hScrollBar1
             // 
-            this.hScrollBar1.Cursor = System.Windows.Forms.Cursors.Default;
+            this.hScrollBar1.Cursor = System.Windows.Forms.Cursors.WaitCursor;
             this.hScrollBar1.LargeChange = 1;
             this.hScrollBar1.Location = new System.Drawing.Point(29, 499);
             this.hScrollBar1.Name = "hScrollBar1";
             this.hScrollBar1.Size = new System.Drawing.Size(817, 17);
             this.hScrollBar1.TabIndex = 6;
+            this.hScrollBar1.UseWaitCursor = true;
             this.hScrollBar1.Scroll += new System.Windows.Forms.ScrollEventHandler(this.hScrollBar1_Scroll);
             // 
             // hScrollBar2
@@ -151,7 +140,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(672, 566);
+            this.button3.Location = new System.Drawing.Point(522, 564);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(93, 23);
             this.button3.TabIndex = 11;
@@ -163,19 +152,28 @@
             // 
             this.folderBrowserDialog1.HelpRequest += new System.EventHandler(this.folderBrowserDialog1_HelpRequest);
             // 
+            // encoderPresetsBox
+            // 
+            this.encoderPresetsBox.FormattingEnabled = true;
+            this.encoderPresetsBox.Location = new System.Drawing.Point(634, 566);
+            this.encoderPresetsBox.Name = "encoderPresetsBox";
+            this.encoderPresetsBox.Size = new System.Drawing.Size(121, 21);
+            this.encoderPresetsBox.TabIndex = 12;
+            this.encoderPresetsBox.SelectedIndexChanged += new System.EventHandler(this.encoderPresets_SelectedIndexChanged);
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(200)))), ((int)(((byte)(225)))));
             this.ClientSize = new System.Drawing.Size(883, 612);
+            this.Controls.Add(this.encoderPresetsBox);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.consoleBox);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.hScrollBar2);
             this.Controls.Add(this.hScrollBar1);
-            this.Controls.Add(this.button2);
             this.Controls.Add(this.openFile);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label1);
@@ -196,7 +194,6 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Button openFile;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
-        private System.Windows.Forms.Button button2;
         private System.Windows.Forms.HScrollBar hScrollBar1;
         private System.Windows.Forms.HScrollBar hScrollBar2;
         private System.Windows.Forms.Label label2;
@@ -204,6 +201,7 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
+        private System.Windows.Forms.ComboBox encoderPresetsBox;
     }
 }
 
