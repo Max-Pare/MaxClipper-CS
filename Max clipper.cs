@@ -1,39 +1,65 @@
-﻿using System;
+﻿using Emgu.CV;
+using Emgu.CV.Cuda;
+using Emgu.CV.Structure;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
+using System.Reflection.Emit;
 using System.Windows.Forms;
-using System.Diagnostics;
-using System.Security.Cryptography.X509Certificates;
-using System.Collections.Concurrent;
-using System.Security.Cryptography;
-using System.Security.AccessControl;
-using System.Windows.Forms.VisualStyles;
-using System.Runtime.InteropServices.ComTypes;
-using MaxClipper;
-using Emgu.CV;
-using System.Text.RegularExpressions;
-using Emgu.CV.Structure;
-using Emgu.CV.XImgproc;
-using System.Reflection;
-using System.Drawing.Imaging;
-using System.CodeDom;
-using Microsoft.WindowsAPICodePack.Dialogs;
-using Emgu.CV.VideoStab;
 
 namespace MaxClipper //192; 200; 225
 {
 
     public partial class MainWindow : Form
     {
+        Dictionary<string, Dictionary<string, string>> ENCODER_PRESETS = new Dictionary<string, Dictionary<string, string>>
+        {
+            ["no re-encode"] = new Dictionary<string, string>
+            {
+                ["norencode"] = "true",
+            },
+            ["balanced"] = new Dictionary<string, string>
+            {
+                ["quality"] = "22",
+                ["speed"] = "slow",
+                ["fps"] = "same",
+                ["gpu"] = "yes",
+                ["res"] = "1920x1080"
+            },
+            ["fastest"] = new Dictionary<string, string>
+            {
+                ["quality"] = "24",
+                ["speed"] = "fastest",
+                ["fps"] = "30",
+                ["gpu"] = "yes",
+                ["res"] = "1920x1080"
+            },
+            ["small"] = new Dictionary<string, string>
+            {
+                ["quality"] = "26",
+                ["speed"] = "slowest",
+                ["fps"] = "30",
+                ["gpu"] = "yes",
+                ["res"] = "1280x720"
+            },
+            ["quality"] = new Dictionary<string, string>
+            {
+                ["quality"] = "18",
+                ["speed"] = "slowest",
+                ["fps"] = "same",
+                ["gpu"] = "yes",
+                ["res"] = "same"
+            }
+        };
 
-        public string currentDir = System.IO.Directory.GetCurrentDirectory();
+        public static string currentDir = System.IO.Directory.GetCurrentDirectory();
+        public static string ffmpegEx = ".\\FFmpeg\\bin\\ffmpeg.exe";
+        public static string handbrakeEx = ".\\HandBrake\\HandBrakeCLI.exe";
+        
 
         public MainWindow()
         {
@@ -50,17 +76,14 @@ namespace MaxClipper //192; 200; 225
         {
             if (videoObj == null) { return; }
             segmentFrames[direction] = (float)(value * (1 / videoObj.frameRate));
-            //float remappedVal = value.Remap(hScrollBar1.Minimum, hScrollBar1.Maximum, 0, 1);
-            //int frameToGrab = (int)Math.Floor(videoObj.frameCount * remappedVal);
             var frameToShow = videoObj.GetFrame((int)Math.Floor(value));
-            if(frameToShow == null) { return; }
+            if (frameToShow == null) { return; }
             pictureBox1.Image = frameToShow;
         }
 
         private void hScrollBar1_Scroll(object sender, ScrollEventArgs e)
         {
             handleScroll(hScrollBar1.Value, "start");
-
         }
 
         private void hScrollBar2_Scroll(object sender, EventArgs e)
@@ -71,11 +94,7 @@ namespace MaxClipper //192; 200; 225
 
         private void explorerButton(object sender, EventArgs e)
         {
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                filePath.Text = openFileDialog1.FileName;
-                videoDir = openFileDialog1.FileName;
-            }
+
         }
 
         private void openFileDialog1_FileOk(object sender, EventArgs e)
@@ -95,6 +114,11 @@ namespace MaxClipper //192; 200; 225
         VideoTool videoObj = null;
         private void openFileButton(object sender, EventArgs e)
         {
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                filePath.Text = openFileDialog1.FileName;
+                videoDir = openFileDialog1.FileName;
+            }
             if (videoDir == null || !videoDir.EndsWith(".mp4") || !File.Exists(videoDir))
             {
                 LogToConsole("ERROR: file is not a valid video file (only mp4 accepted.)");
@@ -103,6 +127,7 @@ namespace MaxClipper //192; 200; 225
             videoObj = new VideoTool(videoDir);
             hScrollBar1.Maximum = videoObj.frameCount;
             hScrollBar2.Maximum = videoObj.frameCount;
+            hScrollBar2.Value = videoObj.frameCount;
             segmentFrames["start"] = 0;
             segmentFrames["end"] = (float)(videoObj.frameCount * videoObj.frameRate);
             LogToConsole("Frame count: " + videoObj.frameCount.ToString());
@@ -132,12 +157,6 @@ namespace MaxClipper //192; 200; 225
             consoleBox.Invoke(new Action(() => LogToConsole(message)));
         }
 
-        private void MainLoad(object sender, EventArgs e)
-        {
-            consoleBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
-            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
-        }
-
         private void clipButton(object sender, EventArgs e)
         {
             if (videoObj == null)
@@ -150,10 +169,22 @@ namespace MaxClipper //192; 200; 225
                 LogToConsole("Internal error: segmentFrames is null. Try moving both scroll bars again.");
                 return;
             }
-            LogToConsole(segmentFrames["start"].ToString() + " " +  segmentFrames["end"].ToString());
-            string clippedVideo = VideoTool.FFmpegUtils.extract_clip(videoDir, segmentFrames);
+            string clippedVideo = VideoTool.FFmpegUtils.extract_clip(videoDir, segmentFrames, outputFolder);
+            Console.WriteLine(clippedVideo);
+            Console.WriteLine(outputFolder);
+            if(clippedVideo == "__ERR__") { LogToConsole("Something went wrong while extracting the clip."); return; }
+            if(encoderPresetsBox.SelectedItem.ToString() == "no re-encode")
+            {
+                LogToConsole("Skipping encoding, video has been saved!");
+                return;
+            }
+            LogToConsole("Starting handbrake, this may take a while...");
+            string finalOutput = VideoTool.HandBrakeCLI.Encode(clippedVideo, ENCODER_PRESETS[(string)encoderPresetsBox.SelectedItem], (int)videoObj.frameRate, videoObj.resolution);
+            LogToConsole("Done!");
+            Process.Start("explorer.exe", "/select, \"" + finalOutput + "\"");
         }
-        public string outputFolder = "./";
+
+        public string outputFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\Videos";
         private void setOutputFolder_Click(object sender, EventArgs e)
         {
             CommonOpenFileDialog dialog = new CommonOpenFileDialog();
@@ -170,6 +201,154 @@ namespace MaxClipper //192; 200; 225
         {
 
         }
+
+        private void encoderPresets_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void MainLoad(object sender, EventArgs e)
+        {
+            Console.WriteLine(currentDir);
+            if(!File.Exists(ffmpegEx))
+            {
+                throw new FileNotFoundException("FFmpeg not found! It's supposed to be in the same directory as the executable (ProgramFolder\\FFmpeg\\bin\\ffmpeg.exe)");
+
+            } else if(!File.Exists(handbrakeEx))
+            {
+                throw new FileNotFoundException("HandBrakeCLI not found! It's supposed to be in the same directory as the executable (ProgramFolder\\HandBrake\\HandBrakeCLI.exe)");
+            }
+            LogToConsole("FFmpeg installed correctly!");
+            LogToConsole("Handbrake installed correctly!");
+
+            consoleBox.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.None;
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            foreach (string key in ENCODER_PRESETS.Keys)
+            {
+                encoderPresetsBox.Items.Add(key);
+            }
+            encoderPresetsBox.SelectedItem = encoderPresetsBox.Items[0];
+        }
+
+        class VideoTool
+        {
+            public VideoCapture video;
+            public int frameCount;
+            public double frameRate;
+            public string videoName;
+            public string resolution;
+            private int lastFrame = 0;
+
+            public VideoTool(string videoPath)
+            {
+                this.video = new VideoCapture(videoPath);
+                this.frameCount = GetFrameCount();
+                this.frameRate = GetFrameRate();
+                this.videoName = Path.GetFileNameWithoutExtension(videoPath);
+                this.resolution = GetResolution();
+            }
+
+            public Bitmap GetFrame(int frameIndex)
+            {
+                this.video.Set(Emgu.CV.CvEnum.CapProp.PosFrames, frameIndex);
+                Mat matImage = video.QuerySmallFrame();
+                if (matImage == null) { return null; }
+                Bitmap frame = matImage.ToImage<Bgr, byte>().AsBitmap<Bgr, byte>();
+                return frame;
+            }
+
+            public string GetResolution()
+            {
+                return $"{this.video.Width}x{this.video.Height}";
+            }
+
+            public int GetFrameCount()
+            {
+                return (int)this.video.Get(Emgu.CV.CvEnum.CapProp.FrameCount);
+            }
+
+            public double GetFrameRate()
+            {
+                return this.video.Get(Emgu.CV.CvEnum.CapProp.Fps);
+            }
+
+            public static class FFmpegUtils
+            {
+                public static string extract_clip(string videoDir, Dictionary<string, float> segment, string outDir)
+                {
+                    var start = segment["start"].ToString().Replace(",", ".");
+                    var end = segment["end"].ToString().Replace(",", ".");
+                    int counter = 0;
+                    string outFile = null;
+                    while (File.Exists(outFile = $"{outDir}\\{Path.GetFileNameWithoutExtension(videoDir)}(clip {counter}).mp4"))
+                    {
+                        counter++;
+                    }
+                    var proc = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = ffmpegEx,
+                            Arguments = $"-ss {start} -i \"{videoDir}\" -c copy -t {end} \"{outFile}\"",
+                            UseShellExecute = false,
+                            RedirectStandardOutput = true,
+                            CreateNoWindow = true
+                        }
+                    };
+                    proc.Start();
+                    while (!proc.StandardOutput.EndOfStream)
+                    {
+                        string line = proc.StandardOutput.ReadLine();
+                        Console.WriteLine(line);
+
+                    }
+                    proc.WaitForExit();
+                    if (!File.Exists(outFile))
+                    {
+                        return "__ERR__";
+                    }
+                    return outFile;
+                }
+            }
+
+            public static class HandBrakeCLI
+            {
+                public static string Encode(string videoDir, Dictionary<string, string> args, int fps, string resolution)
+                {
+                    if (args["fps"] != "same")
+                    {
+                        fps = int.Parse(args["fps"]);
+                    }
+                    if (args["res"] != "same")
+                    {
+                        resolution = args["res"];
+                    }
+                    string _tempName = $"{Path.GetDirectoryName(videoDir)}\\{new Random().Next(100000, 999999)}.mp4";
+                    try
+                    {
+                        File.Move(videoDir, _tempName);
+                    } catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        return "__ERR__";
+                    }
+                    string handbrakeArgs = $"-i \"{_tempName}\" -o \"{videoDir}\" -e nvenc_h265 --encoder-preset {args["speed"]} --quality {args["quality"]} --rate {fps} --two-pass --cfr --width {resolution.Split('x')[0]} --height {resolution.Split('x')[1]}";
+                    ProcessStartInfo pInfo = new ProcessStartInfo();
+                    pInfo.Arguments = handbrakeArgs;
+                    pInfo.FileName = handbrakeEx;
+                    
+                    Process handbrake = Process.Start(pInfo);
+    
+                    handbrake.WaitForExit();
+                    if (!File.Exists(videoDir))
+                    {
+                        return "__ERR__";
+                    }
+                    return videoDir;
+                }
+            }
+        }
+
     }
 
     public static class ExtensionMethods
@@ -183,104 +362,5 @@ namespace MaxClipper //192; 200; 225
     }
 
 
-    class VideoTool
-    {
-        public VideoCapture video;
-        public int frameCount;
-        public double frameRate;
-        public string videoName;
-        private int lastFrame = 0;
-        public VideoTool(string videoPath)
-        {
-            this.video = new VideoCapture(videoPath);
-            this.frameCount = GetFrameCount();
-            this.frameRate = GetFrameRate();
-            this.videoName = Path.GetFileNameWithoutExtension(videoPath);
-        }
 
-        public Bitmap GetFrame(int frameIndex)
-        {
-            this.video.Set(Emgu.CV.CvEnum.CapProp.PosFrames, frameIndex);
-            Mat matImage = video.QuerySmallFrame();
-            if(matImage == null) { return null; }
-            Bitmap frame = matImage.ToImage<Bgr, byte>().AsBitmap<Bgr, byte>();
-            return frame;
-        }
-
-
-        public int GetFrameCount()
-        {
-            return (int)this.video.Get(Emgu.CV.CvEnum.CapProp.FrameCount);
-        }
-
-        public double GetFrameRate()
-        {
-            return this.video.Get(Emgu.CV.CvEnum.CapProp.Fps);
-        }
-
-        [Obsolete("this is catastrophyically bad and unbelievably slow, do not use.", true)]
-        class VideoCache
-        {
-            private Dictionary<int, string> cache = new Dictionary<int, string>();
-            private string cachePath = null;
-            public VideoCache(VideoCapture videocap, int totalframes, string name)
-            {
-                cachePath = $".\\cache\\{name}_{new Random().Next(0, 1000000)}";
-                if (!File.Exists(cachePath))
-                {
-                    Directory.CreateDirectory($"{cachePath}");
-                }
-                for (int i = 0; i < totalframes; i++)
-                {
-                    if (!videocap.Set(Emgu.CV.CvEnum.CapProp.PosFrames, i)) { continue; }
-                    Mat frame = videocap.QueryFrame();
-                    if (frame == null) { continue; }
-                    Console.WriteLine($"{cachePath}/{name}_{i}.jpeg");
-                    Emgu.CV.CvInvoke.Resize(frame, frame, new Size(768, 480), 0, 0, Emgu.CV.CvEnum.Inter.Linear);
-                    frame.Save($"{cachePath}\\{name}_{i}.jpeg");
-                }
-            }
-
-        }
-
-        public static class FFmpegUtils
-        {
-            public static string extract_clip(string videoDir, Dictionary<string, float> segment)
-            {
-                var start = segment["start"].ToString().Replace(",", ".");
-                var end = segment["end"].ToString().Replace(",", ".");
-                int counter = 0;
-                string outDir = null;
-                while (File.Exists(outDir = $"{Path.GetPathRoot(videoDir)}\\{Path.GetFileNameWithoutExtension(videoDir)}(clip {counter}).mp4"))
-                {
-                    counter++;
-                }
-                var proc = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "ffmpeg",
-                        Arguments = $"-ss {start} -i \"{videoDir}\" -c copy -t {end} \"{outDir}\"",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    }
-                };
-                List<string> output = new List<string>();
-                proc.Start();
-                while (!proc.StandardOutput.EndOfStream)
-                {
-                    string line = proc.StandardOutput.ReadLine();
-                    output.Add(line);
-                    // do something with line
-                }
-                proc.WaitForExit();
-                foreach(string line in output)
-                {
-                    Console.WriteLine(line);
-                }
-                return outDir;
-            }
-        }
-    }
 }
