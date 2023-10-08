@@ -56,6 +56,27 @@ namespace MaxClipper //192; 200; 225
             }
         };
 
+        Dictionary<string, string> RESOLUTION_PRESETS = new Dictionary<string, string>
+        {
+            ["4k"] = "3840x2160",
+            ["1440p"] = "2560x1440",
+            ["1080p"] = "1920x1080",
+            ["720p"] = "1280x720",
+            ["480p"] = "640x480"
+        };
+
+        Dictionary<string, int> FPS_PRESETS = new Dictionary<string, int>
+        {
+            ["same"] = -1,
+            ["60FPS"] = 60,
+            ["30FPS"] = 30
+        };
+
+        Dictionary<string, string> CODEC_PRESET = new Dictionary<string, string>
+        {
+            ["High compatibility"] = "nvenc_h264",
+            ["High quality"] = "nvenc_h265"
+        };
         public static string currentDir = System.IO.Directory.GetCurrentDirectory();
         public static string ffmpegEx = ".\\FFmpeg\\bin\\ffmpeg.exe";
         public static string handbrakeEx = ".\\HandBrake\\HandBrakeCLI.exe";
@@ -75,7 +96,7 @@ namespace MaxClipper //192; 200; 225
         private void handleScroll(float value, string direction)
         {
             if (videoObj == null) { return; }
-            segmentFrames[direction] = (float)(value * (1 / videoObj.frameRate));
+            segmentFrames[direction] = (float)(value * (1 / (double)videoObj.frameRate));
             var frameToShow = videoObj.GetFrame((int)Math.Floor(value));
             if (frameToShow == null) { return; }
             pictureBox1.Image = frameToShow;
@@ -169,6 +190,7 @@ namespace MaxClipper //192; 200; 225
                 LogToConsole("Internal error: segmentFrames is null. Try moving both scroll bars again.");
                 return;
             }
+            Console.WriteLine($"Segments before ffmpeg: {segmentFrames["start"]}, {segmentFrames["end"]}");
             string clippedVideo = VideoTool.FFmpegUtils.extract_clip(videoDir, segmentFrames, outputFolder);
             Console.WriteLine(clippedVideo);
             Console.WriteLine(outputFolder);
@@ -179,7 +201,13 @@ namespace MaxClipper //192; 200; 225
                 return;
             }
             LogToConsole("Starting handbrake, this may take a while...");
-            string finalOutput = VideoTool.HandBrakeCLI.Encode(clippedVideo, ENCODER_PRESETS[(string)encoderPresetsBox.SelectedItem], (int)videoObj.frameRate, videoObj.resolution);
+            string finalOutput = VideoTool.HandBrakeCLI.Encode(
+                    clippedVideo,
+                    ENCODER_PRESETS[(string)encoderPresetsBox.SelectedItem],
+                    (string)fpsBox.SelectedItem == "same" ? videoObj.frameRate : FPS_PRESETS[(string)fpsBox.SelectedItem],
+                    (string)resolutionBox.SelectedItem == "same" ? videoObj.resolution : RESOLUTION_PRESETS[(string)resolutionBox.SelectedItem],
+                    (string)CODEC_PRESET[(string)codecPickBox.SelectedItem]
+                );
             LogToConsole("Done!");
             Process.Start("explorer.exe", "/select, \"" + finalOutput + "\"");
         }
@@ -207,6 +235,11 @@ namespace MaxClipper //192; 200; 225
 
         }
 
+        private void resolutionBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
         private void MainLoad(object sender, EventArgs e)
         {
             Console.WriteLine(currentDir);
@@ -227,14 +260,29 @@ namespace MaxClipper //192; 200; 225
             {
                 encoderPresetsBox.Items.Add(key);
             }
-            encoderPresetsBox.SelectedItem = encoderPresetsBox.Items[0];
+            encoderPresetsBox.SelectedItem = encoderPresetsBox.Items[encoderPresetsBox.Items.IndexOf("balanced")];
+            foreach(string key in RESOLUTION_PRESETS.Keys)
+            {
+                resolutionBox.Items.Add(key);
+            }
+            resolutionBox.SelectedItem = resolutionBox.Items[2];
+            foreach(string key in FPS_PRESETS.Keys)
+            {
+                fpsBox.Items.Add(key);
+            }
+            fpsBox.SelectedItem = fpsBox.Items[0];
+            foreach(string key in CODEC_PRESET.Keys)
+            {
+                codecPickBox.Items.Add(key);
+            }
+            codecPickBox.SelectedItem = codecPickBox.Items[0];
         }
 
         class VideoTool
         {
             public VideoCapture video;
             public int frameCount;
-            public double frameRate;
+            public int frameRate;
             public string videoName;
             public string resolution;
             private int lastFrame = 0;
@@ -267,9 +315,9 @@ namespace MaxClipper //192; 200; 225
                 return (int)this.video.Get(Emgu.CV.CvEnum.CapProp.FrameCount);
             }
 
-            public double GetFrameRate()
+            public int GetFrameRate()
             {
-                return this.video.Get(Emgu.CV.CvEnum.CapProp.Fps);
+                return (int)this.video.Get(Emgu.CV.CvEnum.CapProp.Fps);
             }
 
             public static class FFmpegUtils
@@ -278,6 +326,7 @@ namespace MaxClipper //192; 200; 225
                 {
                     var start = segment["start"].ToString().Replace(",", ".");
                     var end = segment["end"].ToString().Replace(",", ".");
+                    Console.WriteLine($"start: {start}, end: {end}");
                     int counter = 0;
                     string outFile = null;
                     while (File.Exists(outFile = $"{outDir}\\{Path.GetFileNameWithoutExtension(videoDir)}(clip {counter}).mp4"))
@@ -313,26 +362,20 @@ namespace MaxClipper //192; 200; 225
 
             public static class HandBrakeCLI
             {
-                public static string Encode(string videoDir, Dictionary<string, string> args, int fps, string resolution)
+                public static string Encode(string videoDir, Dictionary<string, string> args, int fpsOverride, string resolutionOverride, string encoder)
                 {
-                    if (args["fps"] != "same")
-                    {
-                        fps = int.Parse(args["fps"]);
-                    }
-                    if (args["res"] != "same")
-                    {
-                        resolution = args["res"];
-                    }
+                    Console.WriteLine($"Args: {fpsOverride}, {resolutionOverride}, {encoder}");
                     string _tempName = $"{Path.GetDirectoryName(videoDir)}\\{new Random().Next(100000, 999999)}.mp4";
                     try
                     {
                         File.Move(videoDir, _tempName);
-                    } catch (Exception ex)
+                    } 
+                    catch (Exception ex)
                     {
                         Console.WriteLine(ex);
                         return "__ERR__";
                     }
-                    string handbrakeArgs = $"-i \"{_tempName}\" -o \"{videoDir}\" -e nvenc_h265 --encoder-preset {args["speed"]} --quality {args["quality"]} --rate {fps} --two-pass --cfr --width {resolution.Split('x')[0]} --height {resolution.Split('x')[1]}";
+                    string handbrakeArgs = $"-i \"{_tempName}\" -o \"{videoDir}\" -e {encoder} --encoder-preset {args["speed"]} --quality {args["quality"]} --rate {fpsOverride} --two-pass --cfr --width {resolutionOverride.Split('x')[0]} --height {resolutionOverride.Split('x')[1]}";
                     ProcessStartInfo pInfo = new ProcessStartInfo();
                     pInfo.Arguments = handbrakeArgs;
                     pInfo.FileName = handbrakeEx;
@@ -342,13 +385,19 @@ namespace MaxClipper //192; 200; 225
                     handbrake.WaitForExit();
                     if (!File.Exists(videoDir))
                     {
+                        Console.WriteLine("Handbrake returned nothing, something went wrong.");
                         return "__ERR__";
                     }
+                    File.Delete(_tempName);
                     return videoDir;
                 }
             }
         }
 
+        private void codecPickBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 
     public static class ExtensionMethods

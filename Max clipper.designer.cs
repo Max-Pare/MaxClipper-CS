@@ -41,6 +41,9 @@
             this.button3 = new System.Windows.Forms.Button();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.encoderPresetsBox = new System.Windows.Forms.ComboBox();
+            this.resolutionBox = new System.Windows.Forms.ComboBox();
+            this.fpsBox = new System.Windows.Forms.ComboBox();
+            this.codecPickBox = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -140,7 +143,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(522, 564);
+            this.button3.Location = new System.Drawing.Point(672, 566);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(93, 23);
             this.button3.TabIndex = 11;
@@ -155,11 +158,37 @@
             // encoderPresetsBox
             // 
             this.encoderPresetsBox.FormattingEnabled = true;
-            this.encoderPresetsBox.Location = new System.Drawing.Point(634, 566);
+            this.encoderPresetsBox.Location = new System.Drawing.Point(545, 566);
             this.encoderPresetsBox.Name = "encoderPresetsBox";
             this.encoderPresetsBox.Size = new System.Drawing.Size(121, 21);
             this.encoderPresetsBox.TabIndex = 12;
             this.encoderPresetsBox.SelectedIndexChanged += new System.EventHandler(this.encoderPresets_SelectedIndexChanged);
+            // 
+            // resolutionBox
+            // 
+            this.resolutionBox.FormattingEnabled = true;
+            this.resolutionBox.Location = new System.Drawing.Point(452, 566);
+            this.resolutionBox.Name = "resolutionBox";
+            this.resolutionBox.Size = new System.Drawing.Size(87, 21);
+            this.resolutionBox.TabIndex = 13;
+            this.resolutionBox.SelectedIndexChanged += new System.EventHandler(this.resolutionBox_SelectedIndexChanged);
+            // 
+            // fpsBox
+            // 
+            this.fpsBox.FormattingEnabled = true;
+            this.fpsBox.Location = new System.Drawing.Point(359, 566);
+            this.fpsBox.Name = "fpsBox";
+            this.fpsBox.Size = new System.Drawing.Size(87, 21);
+            this.fpsBox.TabIndex = 14;
+            // 
+            // codecPickBox
+            // 
+            this.codecPickBox.FormattingEnabled = true;
+            this.codecPickBox.Location = new System.Drawing.Point(236, 566);
+            this.codecPickBox.Name = "codecPickBox";
+            this.codecPickBox.Size = new System.Drawing.Size(117, 21);
+            this.codecPickBox.TabIndex = 15;
+            this.codecPickBox.SelectedIndexChanged += new System.EventHandler(this.codecPickBox_SelectedIndexChanged);
             // 
             // MainWindow
             // 
@@ -167,6 +196,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(200)))), ((int)(((byte)(225)))));
             this.ClientSize = new System.Drawing.Size(883, 612);
+            this.Controls.Add(this.codecPickBox);
+            this.Controls.Add(this.fpsBox);
+            this.Controls.Add(this.resolutionBox);
             this.Controls.Add(this.encoderPresetsBox);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button1);
@@ -202,6 +234,9 @@
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
         private System.Windows.Forms.ComboBox encoderPresetsBox;
+        private System.Windows.Forms.ComboBox resolutionBox;
+        private System.Windows.Forms.ComboBox fpsBox;
+        private System.Windows.Forms.ComboBox codecPickBox;
     }
 }
 
