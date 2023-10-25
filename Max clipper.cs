@@ -1,16 +1,20 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Cuda;
 using Emgu.CV.Structure;
+using MaxClipper_C_;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Threading;
 using System.Windows.Forms;
 
+// xcopy /Y /E /I "E:\\Documentoni 2\\Coding\\C#\\MaxClipper GUI\\MaxClipper C#\\Dependencies" "$(TargetDir)"
 namespace MaxClipper //192; 200; 225
 {
 
@@ -80,7 +84,7 @@ namespace MaxClipper //192; 200; 225
         public static string currentDir = System.IO.Directory.GetCurrentDirectory();
         public static string ffmpegEx = ".\\FFmpeg\\bin\\ffmpeg.exe";
         public static string handbrakeEx = ".\\HandBrake\\HandBrakeCLI.exe";
-        
+        private DownloadForm downForm = new DownloadForm();
 
         public MainWindow()
         {
@@ -242,14 +246,23 @@ namespace MaxClipper //192; 200; 225
 
         private void MainLoad(object sender, EventArgs e)
         {
-            Console.WriteLine(currentDir);
-            if(!File.Exists(ffmpegEx))
+            bool ffmpegInstalled = false;
+            bool handbrakeInstalled = false;
+            if (File.Exists(ffmpegEx))
             {
-                throw new FileNotFoundException("FFmpeg not found! It's supposed to be in the same directory as the executable (ProgramFolder\\FFmpeg\\bin\\ffmpeg.exe)");
-
-            } else if(!File.Exists(handbrakeEx))
+                // throw new FileNotFoundException("FFmpeg not found! It's supposed to be in the same directory as the executable (ProgramFolder\\FFmpeg\\bin\\ffmpeg.exe)");
+                ffmpegInstalled = true;
+            }
+            if (File.Exists(handbrakeEx))
             {
-                throw new FileNotFoundException("HandBrakeCLI not found! It's supposed to be in the same directory as the executable (ProgramFolder\\HandBrake\\HandBrakeCLI.exe)");
+                // throw new FileNotFoundException("HandBrakeCLI not found! It's supposed to be in the same directory as the executable (ProgramFolder\\HandBrake\\HandBrakeCLI.exe)");
+                handbrakeInstalled = true;
+            }
+            if (!handbrakeInstalled || !ffmpegInstalled)
+            {
+                downForm.Show();
+                downForm.Activate();
+                downForm.TopMost = true;
             }
             LogToConsole("FFmpeg installed correctly!");
             LogToConsole("Handbrake installed correctly!");

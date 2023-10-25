@@ -86,6 +86,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DownloadForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DownloadForm.Designer.cs">
+      <DependentUpon>DownloadForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Max clipper.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -94,6 +100,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="DownloadForm.resx">
+      <DependentUpon>DownloadForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Max clipper.resx">
       <DependentUpon>Max clipper.cs</DependentUpon>
     </EmbeddedResource>
@@ -132,6 +141,12 @@
     <PackageReference Include="FFmpeg.AutoGen">
       <Version>6.0.0.2</Version>
     </PackageReference>
+    <PackageReference Include="SharpCompress">
+      <Version>0.34.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.IO.Compression.ZipFile">
+      <Version>4.3.0</Version>
+    </PackageReference>
     <PackageReference Include="WindowsAPICodePack-Shell">
       <Version>1.1.1</Version>
     </PackageReference>
@@ -150,6 +165,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /Y /E /I "E:\\Documentoni 2\\Coding\\C#\\MaxClipper GUI\\MaxClipper C#\\Dependencies" "$(TargetDir)"</PostBuildEvent>
+    <PostBuildEvent>xcopy /Y /E /I "$(SolutionDir)/7-Zip" "$(TargetDir)/7-Zip"</PostBuildEvent>
   </PropertyGroup>
 </Project>
