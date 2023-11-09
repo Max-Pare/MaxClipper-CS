@@ -32,6 +32,7 @@ namespace MaxClipper_C_
             string SevenZipEx = "./7-Zip/7z.exe";
             string handbrakeDownloadURL = "https://github.com/HandBrake/HandBrake/releases/download/1.6.1/HandBrakeCLI-1.6.1-win-x86_64.zip";
             string ffmpegDownloadURL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z";
+            label1.Text = "Working...";
             using (var client = new WebClient())
             {
                 int attemps = 0;
