@@ -1,18 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.IO.Compression;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Net;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace MaxClipper_C_
 {
@@ -94,7 +86,7 @@ namespace MaxClipper_C_
                 {
                     if (dir.Contains("ffmpeg"))
                     {
-                        foreach(string subdir in Directory.GetDirectories(dir))
+                        foreach (string subdir in Directory.GetDirectories(dir))
                         {
                             string dest = $"{ffmpegDir}\\{Path.GetFileNameWithoutExtension(subdir)}";
                             //Console.WriteLine(subdir + " ---> " + dest);

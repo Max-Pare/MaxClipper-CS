@@ -1,17 +1,14 @@
 ﻿using Emgu.CV;
-using Emgu.CV.Cuda;
 using Emgu.CV.Structure;
 using MaxClipper_C_;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Text;
 using System.IO;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Threading;
 using System.Windows.Forms;
 
 // xcopy /Y /E /I "E:\\Documentoni 2\\Coding\\C#\\MaxClipper GUI\\MaxClipper C#\\Dependencies" "$(TargetDir)"
@@ -99,8 +96,11 @@ namespace MaxClipper //192; 200; 225
         Dictionary<string, float> segmentFrames = new Dictionary<string, float>();
         private void handleScroll(float value, string direction)
         {
+            Console.WriteLine($"{direction}: {value}");
             if (videoObj == null) { return; }
-            segmentFrames[direction] = (float)(value * (1 / (double)videoObj.frameRate));
+            segmentFrames[direction] = value * (1f / videoObj.frameRate);
+            segmentFrames[direction] = (float)Math.Round(segmentFrames[direction], 2);
+            Console.WriteLine(segmentFrames[direction]);
             var frameToShow = videoObj.GetFrame((int)Math.Floor(value));
             if (frameToShow == null) { return; }
             pictureBox1.Image = frameToShow;
@@ -144,7 +144,7 @@ namespace MaxClipper //192; 200; 225
                 filePath.Text = openFileDialog1.FileName;
                 videoDir = openFileDialog1.FileName;
             }
-            if (videoDir == null || !videoDir.EndsWith(".mp4") || !File.Exists(videoDir))
+            if (videoDir == null || !File.Exists(videoDir))
             {
                 LogToConsole("ERROR: file is not a valid video file (only mp4 accepted.)");
                 return;
@@ -152,9 +152,8 @@ namespace MaxClipper //192; 200; 225
             videoObj = new VideoTool(videoDir);
             hScrollBar1.Maximum = videoObj.frameCount;
             hScrollBar2.Maximum = videoObj.frameCount;
-            hScrollBar2.Value = videoObj.frameCount;
-            segmentFrames["start"] = 0;
-            segmentFrames["end"] = (float)(videoObj.frameCount * videoObj.frameRate);
+            segmentFrames["start"] = 0f;
+            segmentFrames["end"] = 1f;
             LogToConsole("Frame count: " + videoObj.frameCount.ToString());
             LogToConsole("Framerate: " + videoObj.frameRate.ToString());
             pictureBox1.Image = videoObj.GetFrame(0);
@@ -198,8 +197,8 @@ namespace MaxClipper //192; 200; 225
             string clippedVideo = VideoTool.FFmpegUtils.extract_clip(videoDir, segmentFrames, outputFolder);
             Console.WriteLine(clippedVideo);
             Console.WriteLine(outputFolder);
-            if(clippedVideo == "__ERR__") { LogToConsole("Something went wrong while extracting the clip."); return; }
-            if(encoderPresetsBox.SelectedItem.ToString() == "no re-encode")
+            if (clippedVideo == "__ERR__") { LogToConsole("Something went wrong while extracting the clip."); return; }
+            if (encoderPresetsBox.SelectedItem.ToString() == "no re-encode")
             {
                 LogToConsole("Skipping encoding, video has been saved!");
                 return;
@@ -274,17 +273,17 @@ namespace MaxClipper //192; 200; 225
                 encoderPresetsBox.Items.Add(key);
             }
             encoderPresetsBox.SelectedItem = encoderPresetsBox.Items[encoderPresetsBox.Items.IndexOf("balanced")];
-            foreach(string key in RESOLUTION_PRESETS.Keys)
+            foreach (string key in RESOLUTION_PRESETS.Keys)
             {
                 resolutionBox.Items.Add(key);
             }
             resolutionBox.SelectedItem = resolutionBox.Items[2];
-            foreach(string key in FPS_PRESETS.Keys)
+            foreach (string key in FPS_PRESETS.Keys)
             {
                 fpsBox.Items.Add(key);
             }
             fpsBox.SelectedItem = fpsBox.Items[0];
-            foreach(string key in CODEC_PRESET.Keys)
+            foreach (string key in CODEC_PRESET.Keys)
             {
                 codecPickBox.Items.Add(key);
             }
@@ -338,7 +337,7 @@ namespace MaxClipper //192; 200; 225
                 public static string extract_clip(string videoDir, Dictionary<string, float> segment, string outDir)
                 {
                     var start = segment["start"].ToString().Replace(",", ".");
-                    var end = segment["end"].ToString().Replace(",", ".");
+                    var end = (segment["end"] - segment["start"]).ToString().Replace(",", ".");
                     Console.WriteLine($"start: {start}, end: {end}");
                     int counter = 0;
                     string outFile = null;
@@ -353,18 +352,24 @@ namespace MaxClipper //192; 200; 225
                             FileName = ffmpegEx,
                             Arguments = $"-ss {start} -i \"{videoDir}\" -c copy -t {end} \"{outFile}\"",
                             UseShellExecute = false,
-                            RedirectStandardOutput = true,
+                            RedirectStandardOutput = false,
+                            RedirectStandardError = true,
                             CreateNoWindow = true
                         }
                     };
                     proc.Start();
-                    while (!proc.StandardOutput.EndOfStream)
+                    //throw new Exception("breakpoint");
+                    while (proc.StartInfo.RedirectStandardOutput && !proc.StandardOutput.EndOfStream)
                     {
                         string line = proc.StandardOutput.ReadLine();
                         Console.WriteLine(line);
-
+                    }
+                    while (proc.StartInfo.RedirectStandardError && !proc.StandardError.EndOfStream)
+                    {
+                        Console.WriteLine(proc.StandardError.ReadLine());
                     }
                     proc.WaitForExit();
+                    //throw new Exception("breakpoint");
                     if (!File.Exists(outFile))
                     {
                         return "__ERR__";
@@ -382,7 +387,7 @@ namespace MaxClipper //192; 200; 225
                     try
                     {
                         File.Move(videoDir, _tempName);
-                    } 
+                    }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex);
@@ -392,9 +397,9 @@ namespace MaxClipper //192; 200; 225
                     ProcessStartInfo pInfo = new ProcessStartInfo();
                     pInfo.Arguments = handbrakeArgs;
                     pInfo.FileName = handbrakeEx;
-                    
+
                     Process handbrake = Process.Start(pInfo);
-    
+
                     handbrake.WaitForExit();
                     if (!File.Exists(videoDir))
                     {
